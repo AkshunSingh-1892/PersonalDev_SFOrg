@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sf config *)",
+      "Bash(sf project *)",
+      "Bash(sf org *)",
+      "Bash(npx sfdx-lwc-jest *)",
+      "PowerShell(npm run *)",
+      "PowerShell(Get-Command *)",
+      "Bash(sf data *)",
+      "PowerShell(sf data *)",
+      "PowerShell(sf project *)",
+      "PowerShell(python -c \"import docx; print\\('python-docx OK', docx.__version__\\)\" 2>&1)",
+      "PowerShell(& \"$env:TEMP\\\\gen_tdd.ps1\")",
+      "PowerShell(Remove-Item *)"
+    ]
+  }
+}

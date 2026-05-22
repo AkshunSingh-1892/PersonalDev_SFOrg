@@ -1,0 +1,22 @@
+<template>
+    <lightning-card title="Accounts" icon-name="standard:account">
+        <template lwc:if={hasAccounts}>
+            <lightning-datatable
+                key-field="Id"
+                data={accounts}
+                columns={columns}
+                hide-checkbox-column
+            ></lightning-datatable>
+        </template>
+        <template lwc:elseif={error}>
+            <div class="slds-p-around_medium slds-text-color_error" data-id="error">
+                {errorMessage}
+            </div>
+        </template>
+        <template lwc:elseif={isEmpty}>
+            <div class="slds-p-around_medium" data-id="empty">
+                No accounts to display.
+            </div>
+        </template>
+    </lightning-card>
+</template>
