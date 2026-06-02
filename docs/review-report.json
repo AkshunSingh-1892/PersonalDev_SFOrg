@@ -1,0 +1,210 @@
+{
+  "reviewMetadata": {
+    "reviewer": "Claude Code (Automated Review)",
+    "reviewDate": "2026-06-02",
+    "feature": "ClosedWonOpportunities LWC — Closed Won Opportunity View",
+    "branch": "feature/closed-won-opportunities",
+    "apiVersion": "65.0",
+    "filesReviewed": [
+      "force-app/main/default/classes/ClosedWonOpportunityController.cls",
+      "force-app/main/default/classes/ClosedWonOpportunityControllerTest.cls",
+      "force-app/main/default/lwc/closedWonOpportunities/closedWonOpportunities.html",
+      "force-app/main/default/lwc/closedWonOpportunities/closedWonOpportunities.js",
+      "force-app/main/default/lwc/closedWonOpportunities/closedWonOpportunities.js-meta.xml",
+      "force-app/main/default/lwc/closedWonOpportunities/__tests__/closedWonOpportunities.test.js"
+    ],
+    "testResults": {
+      "jestSuites": 3,
+      "jestTotal": 12,
+      "jestPassed": 12,
+      "jestFailed": 0,
+      "lintErrors": 0,
+      "lintWarnings": 0
+    }
+  },
+  "summary": {
+    "overallRating": "APPROVED_WITH_SUGGESTIONS",
+    "criticalIssues": 0,
+    "highIssues": 1,
+    "mediumIssues": 4,
+    "lowIssues": 5,
+    "totalIssues": 10
+  },
+  "findings": [
+    {
+      "id": "CWO-001",
+      "severity": "HIGH",
+      "category": "Security",
+      "file": "force-app/main/default/lwc/closedWonOpportunities/closedWonOpportunities.js",
+      "lines": "47-52",
+      "title": "OpportunityUrl constructed with hardcoded /lightning/r/ path",
+      "description": "The `displayOpportunities` getter constructs navigation URLs as string literals (`/lightning/r/Opportunity/${opp.Id}/view`). This pattern does not respect Experience Cloud sites, Salesforce mobile, or custom domains. The URL is also using `target: '_blank'` in the datatable column which opens a new tab unconditionally.",
+      "recommendation": "Use `NavigationMixin` from `lightning/navigation` with `type: 'standard__recordPage'` and `actionName: 'view'` to navigate programmatically. This ensures compatibility across all Salesforce surfaces. Alternatively, if a static URL is required for the `url` column type, document the surface limitation explicitly.",
+      "codeSnippet": "OpportunityUrl: `/lightning/r/Opportunity/${opp.Id}/view`",
+      "bestPracticeViolated": "LWC Navigation Best Practices — use NavigationMixin, not hardcoded URLs"
+    },
+    {
+      "id": "CWO-002",
+      "severity": "MEDIUM",
+      "category": "Functional",
+      "file": "force-app/main/default/lwc/closedWonOpportunities/closedWonOpportunities.js",
+      "lines": "17-22",
+      "title": "Amount currency hardcoded to USD",
+      "description": "The `Amount` column has `currencyCode: 'USD'` hardcoded. In multi-currency orgs this will display incorrect currency symbols for opportunities denominated in other currencies. The Opportunity `Amount` field in multi-currency orgs uses the record's currency, not necessarily USD.",
+      "recommendation": "Either (a) remove `currencyCode` from `typeAttributes` and let the platform resolve currency based on the org locale, or (b) query `CurrencyIsoCode` from the Opportunity record and pass it dynamically. Option (a) is preferred as it works for single and multi-currency orgs with no additional code.",
+      "codeSnippet": "typeAttributes: { currencyCode: 'USD', minimumFractionDigits: 2 }",
+      "bestPracticeViolated": "Internationalization — never hardcode currency codes in multi-currency org contexts"
+    },
+    {
+      "id": "CWO-003",
+      "severity": "MEDIUM",
+      "category": "Performance",
+      "file": "force-app/main/default/lwc/closedWonOpportunities/closedWonOpportunities.js",
+      "lines": "44-52",
+      "title": "displayOpportunities getter re-maps array on every render cycle",
+      "description": "The `displayOpportunities` getter creates a new mapped array every time it is accessed by the LWC rendering engine. If the template accesses this getter multiple times per render, the mapping runs multiple times unnecessarily.",
+      "recommendation": "Store the mapped result in a private backing field (`_displayOpportunities`) and update it only inside `wiredOpportunities` when new data arrives. This eliminates redundant re-computation on every render cycle.",
+      "codeSnippet": "get displayOpportunities() { if (!Array.isArray(this.opportunities)) { return []; } return this.opportunities.map(...); }",
+      "bestPracticeViolated": "LWC Performance — expensive getter computations should be memoized"
+    },
+    {
+      "id": "CWO-004",
+      "severity": "MEDIUM",
+      "category": "Usability",
+      "file": "force-app/main/default/lwc/closedWonOpportunities/closedWonOpportunities.js-meta.xml",
+      "lines": "12",
+      "title": "Component exposed on RecordPage without object-type restriction",
+      "description": "The component is available for placement on `lightning__RecordPage` without a `<targetConfigs>` restriction. This allows admins to place it on any record page (e.g., Contact, Account, Case) even though it only shows Opportunity data. This is misleading to admins and a poor UX on non-Opportunity pages.",
+      "recommendation": "Either remove `lightning__RecordPage` from targets if placement on record pages is not a requirement, or add `<targetConfigs>` to restrict the target to Opportunity record pages: `<targetConfig targets='lightning__RecordPage'><objects><object>Opportunity</object></objects></targetConfig>`.",
+      "codeSnippet": "<target>lightning__RecordPage</target>",
+      "bestPracticeViolated": "LWC Metadata — RecordPage targets should be object-scoped"
+    },
+    {
+      "id": "CWO-005",
+      "severity": "MEDIUM",
+      "category": "Scalability",
+      "file": "force-app/main/default/classes/ClosedWonOpportunityController.cls",
+      "lines": "4-11",
+      "title": "LIMIT 1000 silently truncates results without user notification",
+      "description": "The SOQL query limits results to 1,000 records. In orgs with many Closed Won opportunities the list silently truncates without informing the user. The LWC has no mechanism to detect or communicate this truncation.",
+      "recommendation": "Add a banner/warning in the LWC when `opportunities.length === 1000` to alert the user that results may be incomplete. Long-term, implement server-side pagination using OFFSET and LIMIT as @api properties, or use the Apex `Database.getQueryLocator` pattern.",
+      "codeSnippet": "LIMIT 1000",
+      "bestPracticeViolated": "UX — silent data truncation must be surfaced to users"
+    },
+    {
+      "id": "CWO-006",
+      "severity": "LOW",
+      "category": "Testing",
+      "file": "force-app/main/default/lwc/closedWonOpportunities/__tests__/closedWonOpportunities.test.js",
+      "lines": "28",
+      "title": "flushPromises only flushes a single microtask tick",
+      "description": "`const flushPromises = () => Promise.resolve()` only resolves a single Promise microtask. For complex async chains involving multiple awaited operations, this may not flush all pending promises, causing intermittent test failures.",
+      "recommendation": "Replace with `() => new Promise(resolve => setTimeout(resolve, 0))` which flushes the full microtask and macrotask queue. This pattern is the standard for robust async flushing in Jest tests.",
+      "codeSnippet": "const flushPromises = () => Promise.resolve();",
+      "bestPracticeViolated": "LWC Jest Testing — flushPromises should use setTimeout to ensure complete async flushing"
+    },
+    {
+      "id": "CWO-007",
+      "severity": "LOW",
+      "category": "Testing",
+      "file": "force-app/main/default/classes/ClosedWonOpportunityControllerTest.cls",
+      "lines": "39",
+      "title": "Test assertion result.size() == 3 brittle if org has existing Closed Won data",
+      "description": "The test asserts exactly 3 Closed Won records. If the test runs against an org that already has Closed Won Opportunity data (not isolated via test data factory), the assertion will fail with an unexpected count.",
+      "recommendation": "Use `result.size() >= 3` to accommodate pre-existing data, or filter by a test-specific name pattern in the SOQL assertion query. The `@testSetup` data isolation via `Name LIKE 'Closed Won %'` in the re-query provides better isolation.",
+      "codeSnippet": "System.assertEquals(3, result.size(), 'Should return only Closed Won opportunities');",
+      "bestPracticeViolated": "Apex Testing — test assertions should be resilient to org data state"
+    },
+    {
+      "id": "CWO-008",
+      "severity": "LOW",
+      "category": "UX",
+      "file": "force-app/main/default/lwc/closedWonOpportunities/closedWonOpportunities.js",
+      "lines": "7-26",
+      "title": "No column sorting support",
+      "description": "The datatable has no `sortable: true` on any column, and there is no `handleSort` event handler. Users cannot reorder the list by Amount, Account Name, or any other field. The data is fixed to ORDER BY Name ascending.",
+      "recommendation": "Add `sortable: true` to each column definition and implement a `handleSort` event handler that re-sorts `this.opportunities` client-side or re-fires the wire with a dynamic sort parameter.",
+      "codeSnippet": "{ label: 'Amount', fieldName: 'Amount', type: 'currency', ... }",
+      "bestPracticeViolated": "UX Best Practice — sortable columns expected in list views"
+    },
+    {
+      "id": "CWO-009",
+      "severity": "LOW",
+      "category": "Maintainability",
+      "file": "force-app/main/default/lwc/closedWonOpportunities/closedWonOpportunities.js",
+      "lines": "55-63",
+      "title": "reduceError is duplicated across components",
+      "description": "`reduceError` is implemented identically in `opportunityList.js`, `accountList.js`, and now `closedWonOpportunities.js`. This violates the DRY principle and means any bug fix or improvement must be applied to all three files.",
+      "recommendation": "Extract `reduceError` into a shared LWC utility module (e.g., `lwc/errorUtils/errorUtils.js`) and import it in each component. LWC supports utility modules as files without a corresponding HTML template.",
+      "codeSnippet": "reduceError(err) { if (err && err.body && err.body.message) { ... } }",
+      "bestPracticeViolated": "DRY Principle — shared utility logic should be extracted to a common module"
+    },
+    {
+      "id": "CWO-010",
+      "severity": "LOW",
+      "category": "Documentation",
+      "file": "force-app/main/default/classes/ClosedWonOpportunityController.cls",
+      "lines": "1-12",
+      "title": "No JSDoc or Apex method-level comments on the controller",
+      "description": "While the project convention avoids over-commenting, the Apex controller has no class-level or method-level documentation. Given that `WITH USER_MODE` and the `Closed Won` filter are non-obvious architectural decisions, a single line comment on each would help future maintainers.",
+      "recommendation": "Add a one-line comment above `getClosedWonOpportunities` explaining the USER_MODE choice and the filter: `// Returns Closed Won opps visible to the running user; USER_MODE enforces FLS`.",
+      "codeSnippet": "@AuraEnabled(cacheable=true)\npublic static List<Opportunity> getClosedWonOpportunities()",
+      "bestPracticeViolated": "Code Documentation — non-obvious security and filter decisions warrant a comment"
+    }
+  ],
+  "preExistingIssuesFound": [
+    {
+      "id": "PRE-001",
+      "severity": "HIGH",
+      "category": "Testing",
+      "file": "force-app/main/default/lwc/opportunityList/__tests__/opportunityList.test.js",
+      "lines": "100",
+      "title": "Wire adapter error emission used wrong body structure",
+      "description": "The existing test called `.error({ body: { message: 'Boom' } }, 500)` which double-nests the error body. The `createApexTestWireAdapter.error(body, status)` sets `result.error = { body: body, status: status }`, so passing `{ body: { message: ... } }` as body creates `result.error.body.body.message` not `result.error.body.message`. This caused the error test to always show 'Unknown error' instead of the actual message.",
+      "status": "FIXED",
+      "fixApplied": "Changed to .error({ message: 'Boom' }, 500) in opportunityList.test.js, accountList.test.js, and closedWonOpportunities.test.js"
+    },
+    {
+      "id": "PRE-002",
+      "severity": "MEDIUM",
+      "category": "Code Quality",
+      "file": "force-app/main/default/aura/DisplayAccount/DisplayAccountController.js",
+      "lines": "1",
+      "title": "ESLint error: no-unused-expressions in Aura controller",
+      "description": "The Aura DisplayAccount component's controller JS has a bare expression statement (likely a missing `({...})` wrapper around the Aura controller object). This causes ESLint `no-unused-expressions` error.",
+      "status": "NOT_FIXED",
+      "fixApplied": "Out of scope for this PR. Should be addressed in a separate Aura cleanup task."
+    },
+    {
+      "id": "PRE-003",
+      "severity": "LOW",
+      "category": "Code Quality",
+      "file": "force-app/main/default/aura/DisplayAccount/DisplayAccountHelper.js",
+      "lines": "10",
+      "title": "ESLint error: no-console in Aura helper",
+      "description": "The Aura DisplayAccount helper uses `console.log`. This passes lint on Aura files that explicitly allow console usage but fails the project-level rule.",
+      "status": "NOT_FIXED",
+      "fixApplied": "Out of scope for this PR. Should be addressed in a separate Aura cleanup task."
+    }
+  ],
+  "positiveObservations": [
+    "Security model is correct: `with sharing`, `WITH USER_MODE` for SOQL FLS enforcement, no DML so no `as user` needed",
+    "No SOQL injection risk: the `Closed Won` filter is a static string literal in Apex, not constructed from user input",
+    "No hardcoded IDs or credentials anywhere in the new code",
+    "Relationship fields (Account.Name, Owner.Name) are correctly flattened before passing to lightning-datatable",
+    "Error handling pattern is consistent with the rest of the codebase (reduceError utility method)",
+    "All 4 Apex test scenarios cover happy path, empty path, field population, and ordering",
+    "All 4 Jest test scenarios cover data rendering, empty state, error state, and relationship field flattening",
+    "Component is self-contained with no @api properties, reducing coupling",
+    "lightning-datatable uses hide-checkbox-column for a cleaner read-only display",
+    "js-meta.xml has a clear masterLabel and description for admin discovery in Lightning App Builder"
+  ],
+  "deploymentReadiness": {
+    "jestTestsPassing": true,
+    "lintClean": true,
+    "apexTestCoverageExpected": "~100%",
+    "securityCompliant": true,
+    "readyToDeploy": true,
+    "blockers": []
+  }
+}

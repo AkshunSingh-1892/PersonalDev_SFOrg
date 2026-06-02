@@ -1,0 +1,25 @@
+<template>
+  <lightning-card
+    title="Closed Won Opportunities"
+    icon-name="standard:opportunity"
+  >
+    <template lwc:if={hasOpportunities}>
+      <lightning-datatable
+        key-field="Id"
+        data={displayOpportunities}
+        columns={columns}
+        hide-checkbox-column
+      ></lightning-datatable>
+    </template>
+    <template lwc:elseif={error}>
+      <div class="slds-p-around_medium slds-text-color_error" data-id="error">
+        {errorMessage}
+      </div>
+    </template>
+    <template lwc:elseif={isEmpty}>
+      <div class="slds-p-around_medium" data-id="empty">
+        No Closed Won Opportunities found.
+      </div>
+    </template>
+  </lightning-card>
+</template>
